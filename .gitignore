@@ -1,5 +1,13 @@
-.venv/
+# Python cache files
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables and secrets
 .env
+
+# Local ticket data
 data/tickets.json
