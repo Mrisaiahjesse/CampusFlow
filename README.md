@@ -105,6 +105,6 @@ If the file is damaged, the app shows an error and does not overwrite it.
 
 ## Pull requests
 
-- Engineer A's PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/3)>
-- Engineer B's PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/2)>
+- Isaiah Jesse PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/3)>
+- Faith Attar PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/2)>
 EOF
