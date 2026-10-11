@@ -1,26 +1,110 @@
-Related Issue: Closes #<README issue number>
+# cat > README.md << 'EOF'
+# CampusFlow
 
-WHAT CHANGED?
-- Replaced the placeholder README.md with the full README
-- Added: project goal, team table, setup, how to run, menu options, how to run tests, priority rules, status rules, work queue rules, where tickets are saved, known limitations, PR links section
+CampusFlow is a command-line helpdesk app for Learn2Earn campus staff. Support requests (Wi-Fi outages, faulty laptops, broken development environments) often get lost when they are reported informally. CampusFlow records each problem as a ticket, calculates its priority, assigns it to a staff member, and tracks it until it is resolved.
 
-HOW DOES IT WORK?
-- Documentation only. No Python code or tests were changed.
-- The priority, status and queue rules in the README were written from the project requirements and checked against the code in main.
+## Team
 
-HOW DID I TEST IT?
-- Command: python3 -m unittest discover -s tests -v
-- Actual result: Ran 63 tests in 0.009s, OK (run on a fresh clone of main)
-- Checked: the test command in the README works from a fresh clone of main
+| Fellow | Role | What they built |
+|---|---|---|
+| <Your name> | Engineer A | Ticket creation, input validation, priority engine, JSON storage, main menu, and their tests |
+| <Partner's name> | Engineer B | Assignment, status workflow, work queue, reports, and their tests |
 
-WHAT DID I LEARN WITH AI?
-- Concept: <what you learned, for example how branches, pushes and pull requests fit together>
-- My verification: Cloned main into a separate folder and ran the full test suite to confirm what is really on GitHub
-- Changed/rejected advice: <only if it really happened, otherwise write "None for this PR">
+## Setup
 
-REVIEWER NOTES
-- Please check that the priority and status rules in the README match what the code does
-- Please confirm your name and role in the Team table are correct
+- Python 3.8 or newer
+- No extra packages are needed. The project uses only the standard library.
 
-KNOWN LIMITATIONS
-- PR links in the README are added after both feature PRs are confirmed
+```bash
+git clone https://github.com/Mrisaiahjesse/CampusFlow.git
+cd CampusFlow
+```
+
+## Run the app
+
+```bash
+python3 main.py
+```
+
+## Menu options
+
+| Option | What it does |
+|---|---|
+| 1 | Create a ticket |
+| 2 | List all tickets |
+| 3 | View one ticket |
+| 4 | Assign a ticket to a staff member |
+| 5 | Change a ticket's status |
+| 6 | Show the work queue |
+| 7 | Show the report |
+| 0 | Exit |
+
+## Run the tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests cover:
+
+- Priority rules and their boundaries
+- Rejecting invalid input (blank title, bad category, bad urgency, zero or negative affected users)
+- Unique ticket IDs, including after a reload
+- Saving and loading JSON, a missing file, and a corrupted file
+- Assignment, status changes, the work queue order, and the report
+
+## Ticket rules
+
+### Fields
+
+Each ticket has: `id`, `title`, `category`, `urgency`, `affected_users`, `priority`, `status`, `assigned_to`.
+
+- **Category:** Network, Hardware, Software, or Other
+- **Urgency:** low, medium, or high
+- **Affected users:** a positive whole number
+- **IDs** are generated automatically: T001, T002, T003, and so on.
+
+### Priority
+
+The first rule that matches is used.
+
+| Rule | Condition | Priority |
+|---|---|---|
+| 1 | high urgency AND 10 or more affected users | critical |
+| 2 | high urgency OR 10 or more affected users | high |
+| 3 | medium urgency OR 3 or more affected users | medium |
+| 4 | everything else | low |
+
+### Status
+
+Tickets move through: open → in_progress → resolved.
+
+- An unassigned ticket cannot move to in_progress.
+- A resolved ticket can only be changed after it is reopened (set back to open).
+- A resolved ticket cannot be assigned.
+- Only a resolved ticket can be reopened.
+
+### Work queue
+
+The queue shows open, unresolved tickets in the order critical, high, medium, low. Tickets with the same priority are ordered by the lower ticket number first.
+
+## Where tickets are saved
+
+Tickets are saved automatically to `data/tickets.json`. This file is created the first time a ticket is saved and is not committed to Git.
+
+To start fresh, close the app and delete `data/tickets.json`.
+
+If the file is damaged, the app shows an error and does not overwrite it.
+
+## Known limitations
+
+- The app is text-only, with no graphical or web interface.
+- Only one person can use the data file at a time.
+- Tickets cannot be edited or deleted after creation, only assigned and moved through statuses.
+- <Add any other honest gaps you find while testing.>
+
+## Pull requests
+
+- Engineer A's PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/3)>
+- Engineer B's PR: <(https://github.com/Mrisaiahjesse/CampusFlow/pull/2)>
+EOF
