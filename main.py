@@ -1,22 +1,22 @@
 from campusflow.storage import load_tickets, save_tickets
-from campusflow.tickets import (
-    create_ticket,
-    format_ticket_details,
-    format_ticket_line,
-    get_ticket,
-)
+from campusflow.queue import get_priority_queue
+from campusflow.reports import generate_report
+from campusflow.workflow import assign_ticket, reopen_ticket, update_status
+from campusflow.tickets import create_ticket, format_ticket_details, format_ticket_line, get_ticket
 
 
 def show_menu():
-    print("\n=== CampusFlow Helpdesk ===")
-    print("1. Create ticket")
-    print("2. List all tickets")
-    print("3. View one ticket")
-    print("4. Assign ticket")
-    print("5. Change ticket status")
-    print("6. Show work queue")
-    print("7. Show report")
-    print("0. Exit")
+    print("""
+=== CampusFlow Helpdesk ===
+1. Create ticket
+2. List all tickets
+3. View one ticket
+4. Assign ticket
+5. Change ticket status
+6. Show work queue
+7. Show report
+0. Exit
+""")
 
 
 def handle_create(tickets):
@@ -27,12 +27,10 @@ def handle_create(tickets):
 
     try:
         ticket = create_ticket(tickets, title, category, urgency, affected_users)
-    except ValueError as error:
+        save_tickets(tickets)
+        print(f"Ticket {ticket['id']} created with priority {ticket['priority']}.")
+    except (ValueError, TypeError) as error:
         print(f"Error: {error}")
-        return
-
-    save_tickets(tickets)
-    print(f"Ticket {ticket['id']} created with priority {ticket['priority']}.")
 
 
 def handle_list(tickets):
@@ -40,54 +38,112 @@ def handle_list(tickets):
         print("No tickets yet.")
         return
 
+    print("\n=== All Tickets ===")
     for ticket in tickets:
         print(format_ticket_line(ticket))
 
 
 def handle_view(tickets):
-    ticket_id = input("Ticket ID (for example T001): ")
+    ticket_id = input("Ticket ID (e.g. T001): ").strip().upper()
 
     try:
-        ticket = get_ticket(tickets, ticket_id)
-    except ValueError as error:
+        print(format_ticket_details(get_ticket(tickets, ticket_id)))
+    except (ValueError, TypeError) as error:
         print(f"Error: {error}")
+
+
+def handle_assign(tickets):
+    ticket_id = input("Ticket ID to assign: ").strip().upper()
+    staff_name = input("Staff member's name: ")
+
+    try:
+        ticket = assign_ticket(tickets, ticket_id, staff_name)
+        save_tickets(tickets)
+        print(f"Ticket {ticket['id']} assigned to {ticket['assigned_to']}.")
+    except (ValueError, TypeError) as error:
+        print(f"Error: {error}")
+
+
+def handle_status(tickets):
+    ticket_id = input("Ticket ID: ").strip().upper()
+    print("1. Start work\n2. Resolve ticket\n3. Reopen resolved ticket")
+
+    actions = {"1": "in_progress", "2": "resolved", "3": "reopen"}
+    action = input("Choose an action: ").strip()
+    new_status = actions.get(action)
+
+    if not new_status:
+        print("Invalid action. Choose 1, 2, or 3.")
         return
 
-    print(format_ticket_details(ticket))
+    try:
+        ticket = (
+            reopen_ticket(tickets, ticket_id)
+            if new_status == "reopen"
+            else update_status(tickets, ticket_id, new_status)
+        )
+        save_tickets(tickets)
+        print(f"Ticket {ticket['id']} status is now {ticket['status']}.")
+    except (ValueError, TypeError) as error:
+        print(f"Error: {error}")
+
+
+def handle_queue(tickets):
+    try:
+        queue = get_priority_queue(tickets)
+        if not queue:
+            print("No unresolved tickets in the work queue.")
+            return
+
+        print("\n=== Priority Work Queue ===")
+        for ticket in queue:
+            print(format_ticket_line(ticket))
+    except (ValueError, TypeError) as error:
+        print(f"Error: {error}")
+
+
+def handle_report(tickets):
+    try:
+        report = generate_report(tickets)
+        print(f"\n=== CampusFlow Report ===\nTotal tickets: {report['total_tickets']}")
+
+        print("\nTickets by status:")
+        for status, count in report["by_status"].items():
+            print(f"  {status.replace('_', ' ').title()}: {count}")
+
+        print("\nTickets by priority:")
+        for priority, count in report["by_priority"].items():
+            print(f"  {priority.title()}: {count}")
+    except (ValueError, TypeError) as error:
+        print(f"Error: {error}")
 
 
 def main():
     try:
         tickets = load_tickets()
-    except ValueError as error:
-        print(f"Error: {error}")
-        return  # Stop, so we never overwrite a damaged file
+    except (ValueError, TypeError) as error:
+        print(f"Error loading tickets: {error}")
+        return
+
+    handlers = {
+        "1": handle_create,
+        "2": handle_list,
+        "3": handle_view,
+        "4": handle_assign,
+        "5": handle_status,
+        "6": handle_queue,
+        "7": handle_report,
+    }
 
     while True:
         show_menu()
         choice = input("Choose an option: ").strip()
 
-        if choice == "1":
-            handle_create(tickets)
-        elif choice == "2":
-            handle_list(tickets)
-        elif choice == "3":
-            handle_view(tickets)
-        elif choice == "4":
-            # ENGINEER B: call your assign function here, then save_tickets(tickets)
-            print("Not built yet (Engineer B).")
-        elif choice == "5":
-            # ENGINEER B: call your status-change function here, then save_tickets(tickets)
-            print("Not built yet (Engineer B).")
-        elif choice == "6":
-            # ENGINEER B: show the work queue here
-            print("Not built yet (Engineer B).")
-        elif choice == "7":
-            # ENGINEER B: show the report here
-            print("Not built yet (Engineer B).")
-        elif choice == "0":
+        if choice == "0":
             print("Goodbye.")
             break
+        elif choice in handlers:
+            handlers[choice](tickets)
         else:
             print("Invalid choice. Please enter a number from the menu.")
 
